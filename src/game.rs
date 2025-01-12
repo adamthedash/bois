@@ -1,4 +1,8 @@
-use crate::{boi::Boi, nest::Nest, vec::Vec2};
+use crate::{
+    boi::{Boi, BoiTemplate},
+    nest::Nest,
+    vec::Vec2,
+};
 use std::{f32::consts::PI, ops::Sub};
 
 use ggez::{
@@ -33,9 +37,11 @@ impl MainState {
             rng: thread_rng(),
             pos: Uniform::new(-arena_radius, arena_radius),
             direction: Uniform::new(0., 2. * PI),
-            speed: Uniform::new(2., 3.),
-            vision: Uniform::new(2., 10.),
-            turning_speed: Uniform::new(0.1, 0.5),
+            template: BoiTemplate {
+                speed: Uniform::new(2., 3.),
+                vision: Uniform::new(2., 10.),
+                turning_speed: Uniform::new(0.1, 0.5),
+            },
         };
 
         let bois = (0..num_bois).map(|_| nest.spawn()).collect::<Vec<_>>();

@@ -26,4 +26,4 @@ Each Boi is has randomly generated attributes within some constraints:
 - Better data structure / algo for dealing with spatial stuff - STRTree for finding nearbois, etc.
 - Interface to enable Bois as a simulation environment for others [Like these](https://github.com/clvrai/awesome-rl-envs)
 - Start refactoring out things - Entity, Strategy, separate update logic from rendering, etc.
-
+- Replace hand-rolled Vec2 with out of the box one from ggez.

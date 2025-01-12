@@ -2,6 +2,7 @@ use game::MainState;
 use ggez::{event, GameResult};
 
 mod boi;
+mod entity;
 mod game;
 mod nest;
 mod vec;
