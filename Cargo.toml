@@ -1,0 +1,9 @@
+[package]
+name = "boids"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ggez = "0.9.3"
+impl_ops = "0.1.1"
+rand = "0.8.5"
