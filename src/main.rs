@@ -5,6 +5,7 @@ mod boi;
 mod entity;
 mod game;
 mod nest;
+mod render;
 mod strategy;
 mod vec;
 
@@ -14,13 +15,13 @@ pub fn main() -> GameResult {
     let arena_radius = 100.; // World units
     let fps = 5;
 
-    let (ctx, event_loop) = ggez::ContextBuilder::new("bois", "adam")
+    let (mut ctx, event_loop) = ggez::ContextBuilder::new("bois", "adam")
         .window_setup(ggez::conf::WindowSetup::default().title("Bois"))
         .window_mode(ggez::conf::WindowMode::default().dimensions(
             arena_radius * 2. * screen_scale + padding * 2.,
             arena_radius * 2. * screen_scale + padding * 2.,
         ))
         .build()?;
-    let state = MainState::new(arena_radius, 100, screen_scale, fps, padding);
+    let state = MainState::new(&mut ctx, arena_radius, 100, screen_scale, fps, padding)?;
     event::run(ctx, event_loop, state)
 }
