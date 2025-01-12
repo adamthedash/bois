@@ -83,18 +83,7 @@ impl EventHandler for MainState {
                 .iter_mut()
                 .zip(decisions)
                 .for_each(|(boi, new_direction)| {
-                    let ideal_direction = new_direction.direction_radians();
-                    // Figure out if we should turn left or Right
-                    let mut delta = (ideal_direction - boi.direction).rem_euclid(2. * PI);
-                    if delta > PI {
-                        delta = PI - delta;
-                    }
-
-                    // Clip to max turning speed
-                    let turn =
-                        delta.signum() * delta.abs().min(boi.turning_speed / self.fps as f32);
-
-                    boi.direction += turn;
+                    boi.action(1. / self.fps as f32, &new_direction);
                 });
 
             // Step 3) Advance time

@@ -1,4 +1,4 @@
-use std::ops::Sub;
+use std::{f32::consts::PI, ops::Sub};
 
 use rand::{prelude::Distribution, Rng};
 
@@ -121,5 +121,18 @@ impl Strategy for Boi {
         .reduce(|a, b| a.add(&b))
         // If there's no signal, keep on truckin'
         .unwrap_or_else(|| self.direction_vector())
+    }
+
+    fn action(&mut self, time_step: f32, direction: &Vec2) {
+        // Figure out if we should turn left or Right
+        let mut delta = (direction.direction_radians() - self.direction).rem_euclid(2. * PI);
+        if delta > PI {
+            delta = PI - delta;
+        }
+
+        // Clip to max turning speed
+        delta = delta.signum() * delta.abs().min(self.turning_speed * time_step);
+
+        self.direction += delta;
     }
 }
