@@ -9,7 +9,7 @@ use std::f32::consts::PI;
 
 use ggez::{
     event::EventHandler,
-    graphics::{self, Color, DrawMode, DrawParam, Mesh},
+    graphics::{self, Color, DrawParam, Drawable},
     Context, GameResult,
 };
 use rand::{distributions::Uniform, prelude::*};
@@ -124,16 +124,23 @@ impl EventHandler for MainState {
                     .scale([self.render.base_scale(), self.render.base_scale()]),
             );
 
-            //let circle = Mesh::new_circle(ctx, DrawMode::fill(), [0., 0.], 2., 2., Color::RED)?;
             self.bois.iter().for_each(|boi| {
                 // Draw boi
                 let position = self.world_to_canvas(&boi.position);
+                let bbox = self.render.assets.boi.dimensions(ctx).unwrap().size();
                 canvas.draw(
                     &self.render.assets.boi,
                     DrawParam::default()
                         .dest([position.x, position.y])
-                        .rotation(boi.direction)
-                        .scale([self.render.base_scale(), self.render.base_scale()]),
+                        // +PI/2 since our image is 90 degrees rotated left
+                        .rotation(boi.direction + PI / 2.)
+                        // Align image centre with Boi centre
+                        .offset([0.5, 0.5])
+                        // Handle scaling specifically for this image (see asset loading section)
+                        .scale([
+                            10. * self.render.screen_scale / bbox.x,
+                            10. * self.render.screen_scale / bbox.y,
+                        ]),
                 );
 
                 // Debug - boi vision

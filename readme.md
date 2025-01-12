@@ -22,8 +22,8 @@ Each Boi is has randomly generated attributes within some constraints:
 - World interaction - Eg. different biomes, weather, mountains that affect the Bois differently.
 
 ### Technical improvements
-- Graphics - Some terrain, sprites, etc.
+- Graphics - Some terrain, ~sprites~, etc.
 - Better data structure / algo for dealing with spatial stuff - STRTree for finding nearbois, etc.
 - Interface to enable Bois as a simulation environment for others [Like these](https://github.com/clvrai/awesome-rl-envs)
-- Start refactoring out things - ~Entity~, ~Strategy~, separate update logic from rendering, etc.
+- start refactoring out things - ~Entity~, ~Strategy~, ~separate update logic from rendering~, etc.
 - Replace hand-rolled Vec2 with out of the box one from ggez.
