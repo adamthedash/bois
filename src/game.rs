@@ -1,9 +1,10 @@
 use crate::{
     boi::{Boi, BoiTemplate},
     nest::Nest,
+    strategy::Strategy,
     vec::Vec2,
 };
-use std::{f32::consts::PI, ops::Sub};
+use std::f32::consts::PI;
 
 use ggez::{
     event::EventHandler,
@@ -13,10 +14,12 @@ use ggez::{
 use rand::{distributions::Uniform, prelude::*};
 
 pub struct MainState {
-    bois: Vec<Boi>,
-    arena_centre: Vec2,
-    arena_radius: f32,
-    // draw stuff
+    // Game state stuff
+    pub bois: Vec<Boi>,
+    pub arena_centre: Vec2,
+    pub arena_radius: f32,
+
+    // Rendering stuff
     screen_scale: f32, // difference between world scale and draw scale
     padding: f32,      // padding around edge of world in pixels
     fps: u32,
@@ -72,75 +75,7 @@ impl EventHandler for MainState {
             let decisions = self
                 .bois
                 .iter()
-                .enumerate()
-                .map(|(i, boi1)| {
-                    // See who's around
-                    let nearbois = self
-                        .bois
-                        .iter()
-                        .enumerate()
-                        // Skip ourselves
-                        .filter(|(j, _)| i != *j)
-                        .map(|(_, boi)| boi)
-                        // Within some distance
-                        .filter(|boi2| boi1.position.distance(&boi2.position) <= boi1.vision)
-                        .collect::<Vec<_>>();
-
-                    // Calculate the ideal vector for each thing. Each of them should be a unit vector
-                    // reprenting a direction to go in
-                    let distances = nearbois
-                        .iter()
-                        .map(|boi2| boi1.position.distance(&boi2.position))
-                        .collect::<Vec<_>>();
-
-                    // Separation - Steer away from nearby bois - weight = 1 / distance
-                    let separation = nearbois
-                        .iter()
-                        .map(|boi2| boi1.position.sub(&boi2.position).normalise())
-                        .zip(&distances)
-                        .map(|(boi2, distance)| boi2.div(*distance))
-                        .reduce(|a, b| a.add(&b))
-                        .map(|v| v.normalise());
-
-                    // Alignment - Align direction with average of nearby bois - weight = constant
-                    let alignment = nearbois
-                        .iter()
-                        .map(|boi2| boi2.direction_vector())
-                        .reduce(|a, b| a.add(&b))
-                        .map(|v| v.normalise());
-
-                    // Cohesion - Steer towards the centre of gravity of nearbois
-                    let cohesion = nearbois
-                        .iter()
-                        .map(|boi2| boi2.position.div(nearbois.len() as f32))
-                        .reduce(|a, b| a.add(&b))
-                        .map(|centre_of_gravity| centre_of_gravity.sub(&boi1.position).normalise());
-
-                    // Don't escape the arena - Steer towards centre of arena if we're too far away.
-                    // Weight = nothing until we're close to the edge, then ramps up exponentially
-                    let distance_to_centre = self.arena_centre.distance(&boi1.position);
-                    let escape = if distance_to_centre > self.arena_radius {
-                        Some(self.arena_centre.sub(&boi1.position).normalise())
-                    } else {
-                        None
-                    };
-
-                    // Combine all the signals together
-                    [
-                        // Apply weighting for different factors, each of which may be null if there are no
-                        // nearbois
-                        separation.map(|x| x.mul(1.)),
-                        alignment.map(|x| x.mul(1.)),
-                        cohesion.map(|x| x.mul(1.)),
-                        escape.map(|x| {
-                            x.mul(distance_to_centre.sub(self.arena_radius).max(0.).powf(1.1))
-                        }),
-                    ]
-                    .into_iter()
-                    .flatten()
-                    .reduce(|a, b| a.add(&b))
-                    .unwrap_or_else(|| boi1.direction_vector())
-                })
+                .map(|boi| boi.decide(self))
                 .collect::<Vec<_>>();
 
             // Step 2) apply the decisions

@@ -5,6 +5,7 @@ mod boi;
 mod entity;
 mod game;
 mod nest;
+mod strategy;
 mod vec;
 
 pub fn main() -> GameResult {
