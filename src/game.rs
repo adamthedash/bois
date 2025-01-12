@@ -77,7 +77,7 @@ impl MainState {
 
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        while ctx.time.check_update_time(10) {
+        while ctx.time.check_update_time(self.render.fps) {
             println!("--- Upate ---");
             // Step 1) decision time
             let decisions = self

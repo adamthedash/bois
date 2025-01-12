@@ -13,7 +13,7 @@ pub fn main() -> GameResult {
     let screen_scale = 3.; // How much bigger is the rendering than the world
     let padding = 100.; // 100 pixels padding on each side of the arena
     let arena_radius = 100.; // World units
-    let fps = 5;
+    let fps = 30;
 
     let (mut ctx, event_loop) = ggez::ContextBuilder::new("bois", "adam")
         .window_setup(ggez::conf::WindowSetup::default().title("Bois"))
