@@ -1,5 +1,6 @@
 use std::{f32::consts::PI, ops::Sub};
 
+use geo_index::kdtree::KDTreeIndex;
 use rand::{prelude::Distribution, Rng};
 
 use crate::{entity::EntityTemplate, strategy::Strategy, vec::Vec2};
@@ -47,20 +48,30 @@ impl Strategy for Boi {
     fn decide(&self, game_state: &crate::game::MainState) -> Vec2 {
         // See who's around
         let nearbois = game_state
-            .bois
-            .iter()
+            // Query the tree since it's quicker
+            .boi_tree
+            .within(self.position.x, self.position.y, self.vision)
+            .into_iter()
+            // Get the bois based on the spatial query
+            .map(|i| {
+                game_state
+                    .bois
+                    .get(i as usize)
+                    .expect("Got invalid boi index!")
+            })
             // Skip ourselves. todo: This is comparing that the entities are the same in memory,
             // this might bite me in the ass later. Probably better to do some unique entity IDs on
             // spawn instead.
             .filter(|boi| !std::ptr::eq(*boi, self))
+            // Limit to 100 nearbois if we have way too many
+            //.take(10)
             // Within some distance
-            .filter(|boi| self.position.distance(&boi.position) <= self.vision)
             .collect::<Vec<_>>();
 
         // Calculate the ideal vector for each thing. Each of them should be a unit vector
         // reprenting a direction to go in
 
-        // Cache distances
+        // Cache distances - todo: use result of query instead if crate maintainer implements it!
         let distances = nearbois
             .iter()
             .map(|boi| self.position.distance(&boi.position))

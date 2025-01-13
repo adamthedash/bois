@@ -6,3 +6,12 @@ edition = "2021"
 [dependencies]
 ggez = {version="0.9.3", default-features=false}
 rand = "0.8.5"
+geo-index = "0.2.0"
+
+# Enable a small amount of optimization in the dev profile.
+[profile.dev]
+opt-level = 1
+
+# Enable a large amount of optimization in the dev profile for dependencies.
+[profile.dev.package."*"]
+opt-level = 3

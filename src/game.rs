@@ -7,6 +7,7 @@ use crate::{
 };
 use std::f32::consts::PI;
 
+use geo_index::kdtree::{KDTree, KDTreeBuilder};
 use ggez::{
     event::EventHandler,
     graphics::{self, Color, DrawParam, Drawable},
@@ -17,6 +18,7 @@ use rand::{distributions::Uniform, prelude::*};
 pub struct MainState {
     // Game state stuff
     pub bois: Vec<Boi>,
+    pub boi_tree: KDTree<f32>,
     pub arena_centre: Vec2,
     pub arena_radius: f32,
 
@@ -60,11 +62,19 @@ impl MainState {
 
         let bois = (0..num_bois).map(|_| nest.spawn()).collect::<Vec<_>>();
 
+        // Build a K-D tree of the bois
+        let mut tree_builder = KDTreeBuilder::new(bois.len() as u32);
+        bois.iter().for_each(|boi| {
+            tree_builder.add(boi.position.x, boi.position.y);
+        });
+        let boi_tree = tree_builder.finish();
+
         Ok(Self {
             bois,
             arena_radius,
             arena_centre,
             render,
+            boi_tree,
         })
     }
     /// Converts a position in world space to canvas space
@@ -79,6 +89,14 @@ impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         while ctx.time.check_update_time(self.render.fps) {
             println!("--- Upate ---");
+
+            //Build a K-D tree of the bois
+            let mut tree_builder = KDTreeBuilder::new(self.bois.len() as u32);
+            self.bois.iter().for_each(|boi| {
+                tree_builder.add(boi.position.x, boi.position.y);
+            });
+            self.boi_tree = tree_builder.finish();
+
             // Step 1) decision time
             let decisions = self
                 .bois

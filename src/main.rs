@@ -22,6 +22,6 @@ pub fn main() -> GameResult {
             arena_radius * 2. * screen_scale + padding * 2.,
         ))
         .build()?;
-    let state = MainState::new(&mut ctx, arena_radius, 100, screen_scale, fps, padding)?;
+    let state = MainState::new(&mut ctx, arena_radius, 1000, screen_scale, fps, padding)?;
     event::run(ctx, event_loop, state)
 }
