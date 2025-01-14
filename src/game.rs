@@ -1,5 +1,5 @@
 use crate::{
-    boi::{Boi, BoiTemplate},
+    boi::{Boi, BoiTemplate, Species},
     nest::Nest,
     render::{Assets, RenderState},
     strategy::Strategy,
@@ -158,7 +158,12 @@ impl EventHandler for MainState {
                         .scale([
                             10. * self.render.screen_scale / bbox.x,
                             10. * self.render.screen_scale / bbox.y,
-                        ]),
+                        ])
+                        // Change the colour depending on the species
+                        .color(match boi.species {
+                            Species::Predator => Color::RED,
+                            Species::Prey => Color::GREEN,
+                        }),
                 );
 
                 // Debug - boi vision

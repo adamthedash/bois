@@ -15,9 +15,13 @@ Each Boi is has randomly generated attributes within some constraints:
 - Turning speed: How quickly can the turn around
 - They also care about each of the rules above differently
 
+There's two species of Boi:
+- Predator: Has an extra top-priority rule: Go after the nearest prey
+- Prey: Has extra top-priority rule: Run away from nearest predator
+
 # Roadmap
 ### Features
-- Different Boi types - eg. predator & prey, different species with distinct strategies
+- Different Boi types - eg. ~predator & prey~, different species with distinct strategies
 - Lifecycles - death & breeding
 - World interaction - Eg. different biomes, weather, mountains that affect the Bois differently.
 

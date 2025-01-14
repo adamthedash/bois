@@ -1,12 +1,19 @@
 use std::{f32::consts::PI, ops::Sub};
 
 use geo_index::kdtree::KDTreeIndex;
-use rand::{prelude::Distribution, Rng};
+use rand::{prelude::Distribution, seq::SliceRandom, Rng};
 
 use crate::{entity::EntityTemplate, strategy::Strategy, vec::Vec2};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Species {
+    Predator,
+    Prey,
+}
+
 #[derive(Debug)]
 pub struct Boi {
+    pub species: Species,
     pub position: Vec2,
     pub direction: f32, // radians
     pub speed: f32,
@@ -34,12 +41,16 @@ impl<D: Distribution<f32>> EntityTemplate for BoiTemplate<D> {
     type Entity = Boi;
 
     fn spawn<R: Rng>(&self, rng: &mut R, position: &Vec2, facing: f32) -> Self::Entity {
+        let choices = [(1., Species::Predator), (5., Species::Prey)];
+        let choice = choices.choose_weighted(rng, |item| item.0).unwrap().1;
+
         Boi {
             position: *position,
             direction: facing,
             speed: self.speed.sample(rng),
             vision: self.vision.sample(rng),
             turning_speed: self.turning_speed.sample(rng),
+            species: choice,
         }
     }
 }
@@ -68,37 +79,71 @@ impl Strategy for Boi {
             // Within some distance
             .collect::<Vec<_>>();
 
+        // Split bois into friends & foes
+        let (friends, enemies) =
+            nearbois
+                .into_iter()
+                .fold((vec![], vec![]), |(mut friends, mut enemies), boi| {
+                    if boi.species == self.species {
+                        friends.push(boi);
+                    } else {
+                        enemies.push(boi);
+                    }
+
+                    (friends, enemies)
+                });
+
         // Calculate the ideal vector for each thing. Each of them should be a unit vector
         // reprenting a direction to go in
 
         // Cache distances - todo: use result of query instead if crate maintainer implements it!
-        let distances = nearbois
+        let friend_distances = friends
+            .iter()
+            .map(|boi| self.position.distance(&boi.position))
+            .collect::<Vec<_>>();
+        let enemy_distances = enemies
             .iter()
             .map(|boi| self.position.distance(&boi.position))
             .collect::<Vec<_>>();
 
         // Separation - Steer away from nearby bois - weight = 1 / distance
-        let separation = nearbois
+        let separation = friends
             .iter()
             .map(|boi| self.position.sub(&boi.position).normalise())
-            .zip(&distances)
+            .zip(&friend_distances)
             .map(|(boi, distance)| boi.div(*distance))
             .reduce(|a, b| a.add(&b))
             .map(|v| v.normalise());
 
         // Alignment - Align direction with average of nearby bois - weight = constant
-        let alignment = nearbois
+        let alignment = friends
             .iter()
             .map(|boi| boi.direction_vector())
             .reduce(|a, b| a.add(&b))
             .map(|v| v.normalise());
 
         // Cohesion - Steer towards the centre of gravity of nearbois
-        let cohesion = nearbois
+        let cohesion = friends
             .iter()
-            .map(|boi| boi.position.div(nearbois.len() as f32))
+            .map(|boi| boi.position.div(friends.len() as f32))
             .reduce(|a, b| a.add(&b))
             .map(|centre_of_gravity| centre_of_gravity.sub(&self.position).normalise());
+
+        // Attack - Steer towards the nearest prey boi
+        let attack = enemy_distances
+            .iter()
+            .zip(&enemies)
+            .filter(|(_, boi)| boi.species == Species::Prey)
+            .min_by(|(distance1, _), (distance2, _)| distance1.total_cmp(distance2))
+            .map(|(_, boi)| boi.position.sub(&self.position).normalise());
+
+        // Defend - Steer away from the nearest predator boi
+        let defend = enemy_distances
+            .iter()
+            .zip(&enemies)
+            .filter(|(_, boi)| boi.species == Species::Predator)
+            .min_by(|(distance1, _), (distance2, _)| distance1.total_cmp(distance2))
+            .map(|(_, boi)| self.position.sub(&boi.position).normalise());
 
         // Don't escape the arena - Steer towards centre of arena if we're too far away.
         // Weight = nothing until we're close to the edge, then ramps up exponentially
@@ -123,6 +168,20 @@ impl Strategy for Boi {
                         .max(0.)
                         .powf(1.1),
                 )
+            }),
+            attack.map(|x| {
+                x.mul(if self.species == Species::Predator {
+                    5. // Predators always chase pray as top priority
+                } else {
+                    0.
+                })
+            }),
+            defend.map(|x| {
+                x.mul(if self.species == Species::Prey {
+                    5. // Prey always run away from predators as top priority
+                } else {
+                    0.
+                })
             }),
         ]
         .into_iter()
