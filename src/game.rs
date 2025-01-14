@@ -7,7 +7,7 @@ use crate::{
 };
 use std::f32::consts::PI;
 
-use geo_index::kdtree::{KDTree, KDTreeBuilder};
+use geo_index::kdtree::{KDTree, KDTreeBuilder, KDTreeIndex};
 use ggez::{
     event::EventHandler,
     graphics::{self, Color, DrawParam, Drawable},
@@ -91,11 +91,17 @@ impl EventHandler for MainState {
             println!("--- Upate ---");
 
             //Build a K-D tree of the bois
-            let mut tree_builder = KDTreeBuilder::new(self.bois.len() as u32);
-            self.bois.iter().for_each(|boi| {
-                tree_builder.add(boi.position.x, boi.position.y);
-            });
-            self.boi_tree = tree_builder.finish();
+            self.boi_tree = self
+                .bois
+                .iter()
+                .fold(
+                    KDTreeBuilder::new(self.bois.len() as u32),
+                    |mut tree, boi| {
+                        tree.add(boi.position.x, boi.position.y);
+                        tree
+                    },
+                )
+                .finish();
 
             // Step 1) decision time
             let decisions = self
@@ -121,6 +127,54 @@ impl EventHandler for MainState {
             });
 
             // Step 4) Apply consequences (Eg. bois being gobbled)
+            //Build a K-D tree of the bois
+            self.boi_tree = self
+                .bois
+                .iter()
+                .fold(
+                    KDTreeBuilder::new(self.bois.len() as u32),
+                    |mut tree, boi| {
+                        tree.add(boi.position.x, boi.position.y);
+                        tree
+                    },
+                )
+                .finish();
+
+            // Kill off any bois that got caught
+            let keep_bois = self
+                .bois
+                .iter()
+                .map(|boi| {
+                    // Predators always stay alive
+                    if boi.species == Species::Predator {
+                        return true;
+                    }
+
+                    // For Prey, we check if there's any nearby predators
+                    let nearby_predator = self
+                        .boi_tree
+                        // Query the tree since it's quicker - kill range is 1 unit
+                        .within(boi.position.x, boi.position.y, 1.)
+                        .into_iter()
+                        // Get the bois based on the spatial query
+                        .map(|i| self.bois.get(i as usize).expect("Got invalid boi index!"))
+                        // Skip ourselves. todo: This is comparing that the entities are the same in memory,
+                        // this might bite me in the ass later. Probably better to do some unique entity IDs on
+                        // spawn instead.
+                        .filter(|boi2| !std::ptr::eq(*boi2, boi))
+                        // Check if there's any predators
+                        .any(|boi2| boi2.species == Species::Predator);
+
+                    !nearby_predator
+                })
+                .collect::<Vec<_>>();
+
+            // Kill em off
+            self.bois = std::mem::take(&mut self.bois)
+                .into_iter()
+                .zip(keep_bois)
+                .filter_map(|(boi, keep)| if keep { Some(boi) } else { None })
+                .collect();
 
             self.render.needs_render = true;
         }

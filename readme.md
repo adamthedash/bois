@@ -21,7 +21,7 @@ There's two species of Boi:
 
 # Roadmap
 ### Features
-- Different Boi types - eg. ~predator & prey~, different species with distinct strategies
+- Different Boi types - eg. ~predator (& gobbling) & prey~, different species with distinct strategies
 - Lifecycles - death & breeding
 - World interaction - Eg. different biomes, weather, mountains that affect the Bois differently.
 
